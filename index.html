@@ -45,10 +45,15 @@ label.chk{display:flex;gap:8px;align-items:center;margin:8px 0}
   <main id="app"></main>
 </div>
 <script src="questions.js"></script>
+<script src="questions_tqlkt.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 const app = $('app');
-let opts = {shuffle: false}, S = null;
+let opts = {shuffle: false}, S = null, SUB = null;
+const SUBJECTS = [
+  {name: 'Kinh tế chính trị Mác – Lênin', data: DATA},
+  {name: 'Tổ chức và quản lý kinh tế', data: DATA_TQL}
+];
 
 function toggleTheme(){
   const d = document.documentElement;
@@ -62,20 +67,28 @@ function shuffle(a){ a = a.slice(); for (let i=a.length-1;i>0;i--){ const j=Math
 function esc(s){ return s.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
 
 function showHome(){
-  S = null; $('home').hidden = true;
-  const total = DATA.reduce((n,c)=>n+c.qs.length,0);
+  S = null; SUB = null; $('home').hidden = true;
   app.innerHTML = `
-    <h1>Kinh tế chính trị Mác – Lênin</h1>
-    <p class="muted">${DATA.length} chương – tổng ${total} câu hỏi. Chọn một chương để bắt đầu làm bài.</p>
-    <label class="chk"><input type="checkbox" id="shuf" ${opts.shuffle?'checked':''} onchange="opts.shuffle=this.checked"> Trộn thứ tự câu hỏi</label>
-    ${DATA.map(c=>`<button class="card mod" onclick="start(${c.id})"><b>Chương ${c.id}</b> · ${c.qs.length} câu<br>${esc(c.title)}</button>`).join('')}
-    <button class="card mod" onclick="start(0)"><b>Tất cả các chương</b> · ${total} câu<br>Ôn tổng hợp toàn bộ ngân hàng câu hỏi</button>`;
+    <h1>Ôn tập trắc nghiệm</h1>
+    <p class="muted">Chọn môn học để bắt đầu.</p>
+    ${SUBJECTS.map((m,i)=>`<button class="card mod" onclick="showSubject(${i})"><b>${esc(m.name)}</b><br>${m.data.length} chương · ${m.data.reduce((n,c)=>n+c.qs.length,0)} câu</button>`).join('')}`;
+}
+
+function showSubject(i){
+  SUB = SUBJECTS[i]; S = null; $('home').hidden = false;
+  const D = SUB.data, total = D.reduce((n,c)=>n+c.qs.length,0);
+  app.innerHTML = `
+    <h1>${esc(SUB.name)}</h1>
+    <p class="muted">${total} câu hỏi. Chọn phần để bắt đầu làm bài.</p>
+    <label class="chk"><input type="checkbox" ${opts.shuffle?'checked':''} onchange="opts.shuffle=this.checked"> Trộn thứ tự câu hỏi</label>
+    ${D.length > 1 ? D.map(c=>`<button class="card mod" onclick="start(${c.id})"><b>Chương ${c.id}</b> · ${c.qs.length} câu<br>${esc(c.title)}</button>`).join('') : ''}
+    <button class="card mod" onclick="start(0)"><b>${D.length > 1 ? 'Tất cả các chương' : 'Bắt đầu làm bài'}</b> · ${total} câu</button>`;
 }
 
 function start(id, list, title){
-  let qs = list || (id === 0 ? DATA.flatMap(c => c.qs.map(q => ({...q, ch: c.id}))) : DATA.find(c=>c.id===id).qs.map(q => ({...q, ch: id})));
+  let qs = list || (id === 0 ? SUB.data.flatMap(c => c.qs.map(q => ({...q, ch: c.id}))) : SUB.data.find(c=>c.id===id).qs.map(q => ({...q, ch: id})));
   if (opts.shuffle) qs = shuffle(qs);
-  S = {qs, i: 0, score: 0, wrong: [], picked: null, title: title || (id ? 'Chương ' + id : 'Tất cả các chương')};
+  S = {qs, i: 0, score: 0, wrong: [], picked: null, title: title || (id ? 'Chương ' + id : SUB.name)};
   $('home').hidden = false;
   render();
 }
